@@ -44,6 +44,20 @@ This is a comprehensive Banking Portal application built with Spring Boot, provi
 -   **Build Tool:**
     -   Maven
 
+## Dependencies
+
+The project includes the following dependencies:
+
+-   **Spring Boot Starter Data JPA:** For simplified data access using JPA.
+-   **Spring Boot Starter Security:** For authentication and authorization.
+-   **Spring Boot Starter Validation:** For validating request data.
+-   **Spring Boot Starter Web:** For building RESTful APIs.
+-   **JSON Web Token (JWT):** For generating and validating JWTs.
+-   **MySQL Connector/J:** The JDBC driver for MySQL.
+-   **Lombok:** To reduce boilerplate code.
+
+For a complete list of dependencies, see the [pom.xml](pom.xml) file.
+
 ## Getting Started
 
 ### Prerequisites

@@ -14,13 +14,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class CashDepositResponse {
-//    private String accountNumber;
-//    private BigDecimal depositedAmount;
-//    private BigDecimal newBalance;
-//    private LocalDateTime transactionTime;
-//    private String message;
-//    private String transactionReference;
-
     private String accountNumber;
     private BigDecimal transactionAmount;
     private BigDecimal newBalance;

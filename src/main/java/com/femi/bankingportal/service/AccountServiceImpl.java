@@ -1,15 +1,12 @@
 package com.femi.bankingportal.service;
 
-import com.femi.bankingportal.dto.AccountRegistrationRequestDTO;
-import com.femi.bankingportal.dto.AccountRegistrationResponseDTO;
-import com.femi.bankingportal.dto.TransactionResponse;
+import com.femi.bankingportal.dto.*;
 import com.femi.bankingportal.model.*;
 import com.femi.bankingportal.repository.AccountRepository;
 import com.femi.bankingportal.repository.TransactionRepository;
 import com.femi.bankingportal.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.UUID;
 
 @Service
@@ -232,16 +228,10 @@ public class AccountServiceImpl implements AccountService {
                 .build();
     }
 
-    public BigDecimal getAccountBalance(String accountNumber) {
-        Account account = accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new RuntimeException("Account not found: " + accountNumber));
-
-        return account.getBalance();
-    }
-
     @Override
     @Transactional
-    public void fundTransfer(String sourceAccountNumber, String targetAccountNumber, String pin, BigDecimal amount) {
+    public String fundTransfer(String sourceAccountNumber, String targetAccountNumber,
+                                                 String pin, BigDecimal amount, Long userId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Transfer amount must be positive");
         }
@@ -252,6 +242,10 @@ public class AccountServiceImpl implements AccountService {
 
         Account sourceAccount = accountRepository.findByAccountNumber(sourceAccountNumber)
                 .orElseThrow(() -> new RuntimeException("Source account not found: " + sourceAccountNumber));
+
+        if (!sourceAccount.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Access denied: You don't own the source account");
+        }
 
         if (!sourceAccount.isActive()) {
             throw new RuntimeException("Source account is not active");
@@ -280,24 +274,18 @@ public class AccountServiceImpl implements AccountService {
         sourceAccount.setBalance(sourceAccount.getBalance().subtract(amount));
         targetAccount.setBalance(targetAccount.getBalance().add(amount));
 
-//        String transferReference = generateTransferReference();
-
         Transaction debitTransaction = Transaction.builder()
                 .account(sourceAccount)
-                .type(TransactionType.TRANSFER)
+                .type(TransactionType.TRANSFER_OUT)
                 .amount(amount)
                 .timestamp(LocalDateTime.now())
-//                .description("Transfer to " + targetAccountNumber)
-//                .referenceNumber(transferReference)
                 .build();
 
         Transaction creditTransaction = Transaction.builder()
                 .account(targetAccount)
-                .type(TransactionType.TRANSFER)
+                .type(TransactionType.TRANSFER_IN)
                 .amount(amount)
                 .timestamp(LocalDateTime.now())
-//                .description("Transfer from " + sourceAccountNumber)
-//                .referenceNumber(transferReference)
                 .build();
 
         sourceAccount.getTransactions().add(debitTransaction);
@@ -305,9 +293,76 @@ public class AccountServiceImpl implements AccountService {
 
         accountRepository.save(sourceAccount);
         accountRepository.save(targetAccount);
+
+        return "Transfer done";
     }
 
-    private String generateTransferReference() {
-        return "TXN" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+    @Override
+    public AccountInfoDto getAccountInfo(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + accountNumber));
+
+        if (!account.isActive()) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        return AccountInfoDto.builder()
+                .accountNumber(account.getAccountNumber())
+                .accountType(account.getAccountType().name())
+                .accountHolderName(account.getUser().getFirstName() + " " + account.getUser().getLastName())
+                .isActive(account.isActive())
+                .build();
     }
+
+    @Override
+    public BigDecimal getAccountBalance(String accountNumber, Long userId) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + accountNumber));
+
+        if (!account.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Access denied: Account does not belong to user");
+        }
+
+        if (!account.isActive()) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        return account.getBalance();
+    }
+
+    @Override
+    public AccountBalanceDto getAccountBalanceDetails(String accountNumber, Long userId) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + accountNumber));
+
+        if (!account.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Access denied: Account does not belong to user");
+        }
+
+        if (!account.isActive()) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        return AccountBalanceDto.builder()
+                .accountNumber(account.getAccountNumber())
+                .accountType(account.getAccountType().name())
+                .balance(account.getBalance())
+                .isActive(account.isActive())
+                .lastUpdated(account.getCreatedAt())
+                .accountHolderName(account.getUser().getFirstName() + " " + account.getUser().getLastName())
+                .build();
+    }
+
+    @Override
+    public BigDecimal getAccountBalancex(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + accountNumber));
+
+        if (!account.isActive()) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        return account.getBalance();
+    }
+
 }

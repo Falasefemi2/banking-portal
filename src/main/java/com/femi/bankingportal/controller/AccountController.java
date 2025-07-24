@@ -4,7 +4,6 @@ import com.femi.bankingportal.dto.*;
 import com.femi.bankingportal.model.TransactionType;
 import com.femi.bankingportal.model.User;
 import com.femi.bankingportal.service.AccountService;
-import com.femi.bankingportal.service.AccountServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -127,4 +126,49 @@ public class AccountController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PreAuthorize("hasRole('USER')")
+    @PostMapping("/fund-transfer")
+    public ResponseEntity<FundTransferResponse> fundTransfer(@Valid @RequestBody TransferMoneyDto dto) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User authenticatedUser = (User) auth.getPrincipal();
+
+        BigDecimal sourceAccountPreviousBalance = accountService.getAccountBalance(dto.getSourceAccountNumber(), authenticatedUser.getId());
+        BigDecimal targetAccountPreviousBalance = accountService.getAccountBalancex(dto.getTargetAccountNumber());
+
+        String transferReference = accountService.fundTransfer(
+                dto.getSourceAccountNumber(),
+                dto.getTargetAccountNumber(),
+                dto.getPin(),
+                dto.getAmount(),
+                authenticatedUser.getId()
+        );
+
+        BigDecimal sourceAccountNewBalance = accountService.getAccountBalance(dto.getSourceAccountNumber(), authenticatedUser.getId());
+        BigDecimal targetAccountNewBalance = accountService.getAccountBalancex(dto.getTargetAccountNumber());
+
+        FundTransferResponse response = FundTransferResponse.builder()
+                .sourceAccount(dto.getSourceAccountNumber())
+                .targetAccount(dto.getTargetAccountNumber())
+                .transferAmount(dto.getAmount())
+                .sourceAccountPreviousBalance(sourceAccountPreviousBalance)
+                .sourceAccountNewBalance(sourceAccountNewBalance)
+                .targetAccountPreviousBalance(targetAccountPreviousBalance)
+                .targetAccountNewBalance(targetAccountNewBalance)
+                .transferTime(LocalDateTime.now())
+                .message("Fund transfer successful")
+                .status("SUCCESS")
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/account-info/{accountNumber}")
+    public ResponseEntity<AccountInfoDto> getAccountInfo(@PathVariable String accountNumber) {
+        AccountInfoDto accountInfo = accountService.getAccountInfo(accountNumber);
+        return ResponseEntity.ok(accountInfo);
+    }
+
 }
