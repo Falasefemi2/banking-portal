@@ -13,5 +13,5 @@ public interface AccountService {
     public void updatePin(String accountNumber, String oldPIN, String password, String newPIN);
     public TransactionResponse cashDepositWithResponse(String accountNumber, String pin, BigDecimal amount, Long userId);
     public TransactionResponse cashWithdrawal(String accountNumber, String pin, BigDecimal amount, Long userId);
-    public void fundTransfer(String sourceAccountNumber, String targetAccountNumber, String pin, BigDecimal amount);
+   public void fundTransfer(String sourceAccountNumber, String targetAccountNumber, String pin, BigDecimal amount);
 }
