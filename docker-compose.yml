@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: banking-portal-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: banking_portal
+      MYSQL_USER: root
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - banking-network
+
+  app:
+    build: .
+    container_name: banking-portal-app
+    depends_on:
+      - mysql
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_URL=jdbc:mysql://mysql:3306/banking_portal?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - DB_USERNAME=root
+      - DB_PASSWORD=admin
+      - JWT_SECRET=hwGAWRFIcHD7E7x7HvrmkktLnnQBzFvjxSHnO4YxUz1Z9CLYILn4lO0Dh4agFfTliYsZrsNAdQEFsQjRYyb8cg==
+      - JWT_EXPIRATION=3600000
+      - PORT=8080
+    networks:
+      - banking-network
+
+volumes:
+  mysql_data:
+
+networks:
+  banking-network:
+    driver: bridge
